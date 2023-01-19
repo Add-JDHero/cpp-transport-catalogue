@@ -11,27 +11,27 @@ namespace transport_catalogue {
 
     void TransportCatalogue::AddStop(const Stop& stop_data) {
         stops_.push_back(std::move(stop_data));
-        stopname_to_stop[stops_.back().stop_name_] = &stops_.back();
+        stopname_to_stop_[stops_.back().stop_name_] = &stops_.back();
     }
 
     const Stop* TransportCatalogue::FindStop(std::string_view stop_name) const {
-        if (stopname_to_stop.count(stop_name) == 0) {
+        if (stopname_to_stop_.count(stop_name) == 0) {
             return nullptr;
         }
-        return stopname_to_stop.at(stop_name);
+        return stopname_to_stop_.at(stop_name);
     }
 
     void TransportCatalogue::AddBus(const Bus& bus_data) {
         buses_.push_back(bus_data);
-        busname_to_bus[buses_.back().bus_num_] = &buses_.back();
+        busname_to_bus_[buses_.back().bus_num_] = &buses_.back();
         SetRouteDistances(bus_data.route_, bus_data.flag_);
     }
 
     const Bus* TransportCatalogue::FindBus(std::string_view bus_num) const {
-        if (busname_to_bus.count(bus_num) == 0) {
+        if (busname_to_bus_.count(bus_num) == 0) {
             return nullptr;
         }
-        return busname_to_bus.at(bus_num);
+        return busname_to_bus_.at(bus_num);
     }
 
     const BusInfo TransportCatalogue::GetBusInfo(std::string_view bus_num) const {
@@ -69,7 +69,6 @@ namespace transport_catalogue {
         } else {
             SetNotCircleRouteDistances(route);
         }
-
     }
 
     double TransportCatalogue::ComputeRouteLength(const std::vector<const Stop*>& route, bool is_circle) const {
@@ -110,6 +109,19 @@ namespace transport_catalogue {
             distances_[pair1] = ComputeDistance(stop_ptr->coords_, next_stop_ptr->coords_);
             distances_[pair2] = ComputeDistance(next_stop_ptr->coords_, stop_ptr->coords_);
         }
+    }
+
+    std::set<std::string> TransportCatalogue::GetStopToBusInfo(std::string_view stop_name) const {
+        std::set<std::string> result;
+
+        for (const auto bus: buses_) {
+            const Stop* ptr = this->FindStop(stop_name);
+            if (bus.unique_stops.count(ptr) ) {
+                result.insert(std::string(bus.bus_num_));
+            } 
+        }
+
+        return result;
     }
 }
 

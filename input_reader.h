@@ -6,22 +6,28 @@
 #include "transport_catalogue.h"
 
 
-namespace transport_catalogue {  
+namespace transport_catalogue { 
+    enum class Requests {
+        BUS,
+        STOP,
+    };
+ 
     namespace input {
         std::string ReadLine(std::istream& input);
         int ReadLineWithNumber();
 
-        std::queue<std::string> ReadBusRequest(std::istream& input);
+        std::queue<std::string> ReadRequests(std::istream& input);
 
-        std::string ParseStop(std::string_view& stop_reuqest);
+        std::string_view ParseАppellation(std::string_view& reuqest);
+        //std::string ParseStop(std::string_view& stop_reuqest);
         Coordinates ParseCoords(std::string_view request);
         transport_catalogue::Stop ParseStopRequest(std::string_view stop_request);
 
-        std::string_view ParseBusNum(std::string_view& bus_request);
+        //std::string_view ParseBusNum(std::string_view& bus_request);
         std::string_view ExtractStopName(std::string_view& bus_request, char separator);
         Bus ParseBusRequest(TransportCatalogue& obj, std::string_view bus_request);
 
-        void ParseInput(transport_catalogue::TransportCatalogue& obj, std::istream& input);
+        void ParseInput(transport_catalogue::TransportCatalogue& obj);
     }
 
 }

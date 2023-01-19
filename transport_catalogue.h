@@ -7,13 +7,14 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 
 namespace transport_catalogue { 
     struct Stop {
         Stop(std::string_view stop_name, const Coordinates& p);
 
-        Coordinates coords_;
         std::string stop_name_;
+        Coordinates coords_;
     };
 
     struct Bus {
@@ -53,17 +54,19 @@ namespace transport_catalogue {
         void AddBus(const Bus& bus_data);
         const Bus* FindBus(std::string_view bus_num) const;
         const BusInfo GetBusInfo(std::string_view bus_num) const;
+        std::set<std::string> GetStopToBusInfo(std::string_view stop_name) const;
 
         size_t StopsCount() const noexcept;
 
     private:
         std::deque<Stop> stops_;
-        std::unordered_map<std::string_view, const Stop*> stopname_to_stop;
+        std::unordered_map<std::string_view, const Stop*> stopname_to_stop_;
         
         std::deque<Bus> buses_;
-        std::unordered_map<std::string_view, const Bus*> busname_to_bus;
+        std::unordered_map<std::string_view, const Bus*> busname_to_bus_;
 
         std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> distances_;
+        std::unordered_map<const Stop*, std::set<const Bus*>, PointersHasher> stopname_to_bus_;
 
         const BusInfo CreateBusInfo(const Bus* bus_ptr) const;
         void SetRouteDistances(const std::vector<const Stop*>& route, bool is_circle);

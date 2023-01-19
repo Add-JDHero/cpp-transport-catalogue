@@ -5,25 +5,66 @@
 #include <iomanip>
 #include <queue>
 
+//using std::string_literals::operator""sv;
+
+
 namespace transport_catalogue {
     namespace output {
+        void StopInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view appellation) {
+            if (catalog.FindStop(appellation)) {
+                std::set<std::string> info = catalog.GetStopToBusInfo(appellation);
+                if (!info.empty()) {
+                    out << "buses ";
+                    bool flag = false;
+                    for (const auto bus_num: info) {
+                        if (flag) {
+                            out << " ";
+                        }
+                        flag = true;
+                        out << bus_num;
+                    }
+                    out << "\n";
+                } else {
+                    out << "no buses\n";
+                }
+            } else {
+                out << "not found\n";
+            }
+        }
+
+        void BusInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view appellation) {
+            if (catalog.FindBus(appellation)) {
+                auto bus_info = catalog.GetBusInfo(appellation);
+                out << bus_info.stops_on_route << " stops on route, "
+                    << bus_info.unique_stops << " unique stops, "
+                    << std::setprecision(6) 
+                    << bus_info.route_length << " route length\n";
+            } else {
+                out << "not found\n";
+            }
+        }
+
+
+        void FoundInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view request) {
+            std::string_view tmp = request;
+            std::string_view appellation = transport_catalogue::input::ParseАppellation(tmp);
+            Requests req_type = request.substr(0, request.find_first_of(' ')) == "Bus" ? Requests::BUS : Requests::STOP;
+
+            out << request << ": ";
+            if (req_type == Requests::BUS) {
+                BusInfo(out, catalog, appellation);
+            } else {
+                StopInfo(out, catalog, appellation);
+            }
+        }
+
         void OutputData(const TransportCatalogue& catalog, std::ostream& out) {
-            std::queue<std::string> request_queue = transport_catalogue::input::ReadBusRequest(std::cin);
+            std::queue<std::string> request_queue = transport_catalogue::input::ReadRequests(std::cin);
             size_t n = request_queue.size();
             for (int i = 0; i < n; ++i) {
-                std::string_view bus_req = request_queue.front();
-                std::string_view bus_num = bus_req.substr(bus_req.find_first_of(' ') + 1);
-                out << bus_req << ": ";
-                if (catalog.FindBus(bus_num)) {
-                    auto bus_info = catalog.GetBusInfo(bus_num);
-                    out << bus_info.stops_on_route << " stops on route, "
-                        << bus_info.unique_stops << " unique stops, "
-                        << std::setprecision(6) 
-                        << bus_info.route_length << " route length\n";
-                } else {
-                    out << "not found\n";
-                }
-
+                std::string_view request = request_queue.front();
+                
+                FoundInfo(out, catalog, request);
                 request_queue.pop();
             }
         }

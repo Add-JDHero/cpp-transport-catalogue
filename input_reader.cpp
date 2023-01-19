@@ -20,7 +20,7 @@ namespace transport_catalogue {
             return result;
         }
 
-        std::queue<std::string> ReadBusRequest(std::istream& input) {
+        std::queue<std::string> ReadRequests(std::istream& input) {
             int n = transport_catalogue::input::ReadLineWithNumber();
             std::queue<std::string> queue;
 
@@ -32,15 +32,27 @@ namespace transport_catalogue {
             return queue;
         }
 
-        std::string ParseStop(std::string_view& stop_request) {
-            std::string_view stop_name;
-            stop_request = stop_request.substr(stop_request.find_first_not_of(' '));
-            size_t pos = stop_request.find_first_of(':');
-            stop_name = stop_request.substr(0, pos);
-            stop_name = stop_name.substr(0, stop_name.find_last_not_of(' ') + 1);
-            stop_request = stop_request.substr(pos + 1);
+        /*std::string_view ParseАppellation(std::string_view& bus_request) {
+            bus_request.remove_prefix(bus_request.find_first_not_of(' '));
 
-            return std::string(stop_name);
+            std::string_view bus_num;
+            size_t pos = bus_request.find_first_of(':');
+            bus_num = bus_request.substr(0, pos);
+            bus_request.remove_prefix(pos + 1);
+            
+            return bus_num;
+        }*/
+
+        std::string_view ParseАppellation(std::string_view& bus_request) {
+            bus_request.remove_prefix(bus_request.find_first_of(' '));
+            bus_request.remove_prefix(bus_request.find_first_not_of(' '));
+
+            std::string_view bus_num;
+            size_t pos = bus_request.find_first_of(':');
+            bus_num = bus_request.substr(0, pos);
+            bus_request.remove_prefix(pos + 1);
+            
+            return bus_num;
         }
 
         Coordinates ParseCoords(std::string_view request) {
@@ -54,22 +66,12 @@ namespace transport_catalogue {
         }
 
         Stop ParseStopRequest(std::string_view stop_request) {
-            std::string stop_name = ParseStop(stop_request);
+            std::string stop_name = std::string(ParseАppellation(stop_request));
             Coordinates coords = ParseCoords(stop_request);
 
             return Stop(stop_name, coords);
         }
 
-        std::string_view ParseBusNum(std::string_view& bus_request) {
-            bus_request.remove_prefix(bus_request.find_first_not_of(' '));
-
-            std::string_view bus_num;
-            size_t pos = bus_request.find_first_of(':');
-            bus_num = bus_request.substr(0, pos);
-            bus_request.remove_prefix(pos + 1);
-            
-            return bus_num;
-        }
         std::string_view ExtractStopName(std::string_view& bus_request, char separator) {
             std::string_view stop_name;
             bus_request.remove_prefix(bus_request.find_first_not_of(' '));
@@ -87,7 +89,7 @@ namespace transport_catalogue {
         }
 
         Bus ParseBusRequest(TransportCatalogue& obj, std::string_view bus_request) {
-            std::string_view bus_num = ParseBusNum(bus_request);
+            std::string_view bus_num = ParseАppellation(bus_request);
             std::vector<const Stop*> route;
             std::unordered_set<const Stop*> unique_stops;
             bool flag = false;
@@ -104,21 +106,20 @@ namespace transport_catalogue {
                 unique_stops.insert(ptr);
             }
 
-            return Bus{bus_num, route, unique_stops, flag};
+            return Bus{bus_num, std::move(route), std::move(unique_stops), flag};
         }
 
-        void ParseInput(TransportCatalogue& obj, std::istream& input) {
+        void ParseInput(TransportCatalogue& obj) {
             int req_counter = input::ReadLineWithNumber();
             std::queue<std::string> request_queue;
 
-
             for (int i = 0; i < req_counter; ++i) {
-                std::string tmp_str, stop_name;
-                input >> tmp_str;
-                if (tmp_str == "Bus") {
-                    request_queue.push(ReadLine(std::cin));
+                std::string request = ReadLine(std::cin);
+                Requests req_type = request.substr(0, request.find_first_of(' ')) == "Bus" ? Requests::BUS : Requests::STOP;
+                if (req_type == Requests::BUS) {
+                    request_queue.push(request);
                 } else {
-                    Stop bus_stop = ParseStopRequest(ReadLine(std::cin));
+                    Stop bus_stop = ParseStopRequest(request);
                     obj.AddStop(std::move(bus_stop));
                 }
             }
