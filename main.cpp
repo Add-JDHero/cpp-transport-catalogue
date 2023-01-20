@@ -7,7 +7,7 @@
 #include "log_duration.h"
 
 //#define DEBUG
-//#define DURATION
+#define DURATION
 
 int main() {
 #ifdef DEBUG
@@ -22,8 +22,8 @@ int main() {
     }
 #endif
 
-    transport_catalogue::TransportCatalogue map;
+    /*transport_catalogue::TransportCatalogue map;
     transport_catalogue::input::ParseInput(map);
-    transport_catalogue::output::OutputData(map, std::cout);
+    transport_catalogue::output::OutputData(map, std::cout);*/
 }
 

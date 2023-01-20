@@ -12,7 +12,7 @@ namespace transport_catalogue {
     namespace output {
         void StopInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view appellation) {
             if (catalog.FindStop(appellation)) {
-                std::set<std::string> info = catalog.GetStopToBusInfo(appellation);
+                const std::set<std::string> info = catalog.GetStopToBusInfo(appellation);
                 if (!info.empty()) {
                     out << "buses ";
                     bool flag = false;

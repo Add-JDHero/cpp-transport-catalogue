@@ -25,6 +25,9 @@ namespace transport_catalogue {
         buses_.push_back(bus_data);
         busname_to_bus_[buses_.back().bus_num_] = &buses_.back();
         SetRouteDistances(bus_data.route_, bus_data.flag_);
+        for (auto stop_ptr: bus_data.unique_stops) {
+            stopname_to_bus_[stop_ptr].insert(bus_data.bus_num_);
+        }
     }
 
     const Bus* TransportCatalogue::FindBus(std::string_view bus_num) const {
@@ -111,17 +114,13 @@ namespace transport_catalogue {
         }
     }
 
-    std::set<std::string> TransportCatalogue::GetStopToBusInfo(std::string_view stop_name) const {
-        std::set<std::string> result;
-
-        for (const auto bus: buses_) {
-            const Stop* ptr = this->FindStop(stop_name);
-            if (bus.unique_stops.count(ptr) ) {
-                result.insert(std::string(bus.bus_num_));
-            } 
-        }
-
-        return result;
+    const std::set<std::string> TransportCatalogue::GetStopToBusInfo(std::string_view stop_name) const {
+        const Stop* stop_ptr = this->FindStop(stop_name);
+        size_t buses = stopname_to_bus_.count(stop_ptr);
+        if (buses != 0) {
+            return stopname_to_bus_.at(this->FindStop(stop_name));
+        } 
+        return {};
     }
 }
 

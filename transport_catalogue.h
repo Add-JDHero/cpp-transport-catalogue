@@ -54,7 +54,7 @@ namespace transport_catalogue {
         void AddBus(const Bus& bus_data);
         const Bus* FindBus(std::string_view bus_num) const;
         const BusInfo GetBusInfo(std::string_view bus_num) const;
-        std::set<std::string> GetStopToBusInfo(std::string_view stop_name) const;
+        const std::set<std::string> GetStopToBusInfo(std::string_view stop_name) const;
 
         size_t StopsCount() const noexcept;
 
@@ -66,7 +66,8 @@ namespace transport_catalogue {
         std::unordered_map<std::string_view, const Bus*> busname_to_bus_;
 
         std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> distances_;
-        std::unordered_map<const Stop*, std::set<const Bus*>, PointersHasher> stopname_to_bus_;
+        //std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> distances_;
+        std::unordered_map<const Stop*, std::set<std::string>, PointersHasher> stopname_to_bus_;
 
         const BusInfo CreateBusInfo(const Bus* bus_ptr) const;
         void SetRouteDistances(const std::vector<const Stop*>& route, bool is_circle);
