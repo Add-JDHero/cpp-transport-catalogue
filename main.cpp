@@ -26,4 +26,7 @@ int main() {
     transport_catalogue::input::ParseInput(map);
     transport_catalogue::output::OutputData(map, std::cout);*/
 }
-
+/*
+1
+Stop Universam: 55.587655, 37.645687, 5600m to Rossoshanskaya ulitsa, 900m to Biryulyovo Tovarnaya
+*/

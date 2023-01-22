@@ -9,7 +9,12 @@
 #include <unordered_set>
 #include <set>
 
-namespace transport_catalogue { 
+namespace transport_catalogue {
+    struct RouteLength {
+        double length;
+        double actual_length;
+    };
+
     struct Stop {
         Stop(std::string_view stop_name, const Coordinates& p);
 
@@ -30,7 +35,7 @@ namespace transport_catalogue {
         std::string_view bus_num;
         int stops_on_route;
         int unique_stops;
-        double route_length;
+        RouteLength route_length;
     };
 
     class TransportCatalogue {
@@ -55,6 +60,8 @@ namespace transport_catalogue {
         const Bus* FindBus(std::string_view bus_num) const;
         const BusInfo GetBusInfo(std::string_view bus_num) const;
         const std::set<std::string> GetStopToBusInfo(std::string_view stop_name) const;
+        void SetActualDistance(std::string_view from, std::string_view to, double distance);
+        double GetDistanceBetweenStops(const Stop* from, const Stop* to) const;
 
         size_t StopsCount() const noexcept;
 
@@ -66,13 +73,15 @@ namespace transport_catalogue {
         std::unordered_map<std::string_view, const Bus*> busname_to_bus_;
 
         std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> distances_;
-        //std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> distances_;
+        std::unordered_map<std::pair<const Stop*, const Stop*>, double, PointersHasher> actual_distances_;
         std::unordered_map<const Stop*, std::set<std::string>, PointersHasher> stopname_to_bus_;
 
         const BusInfo CreateBusInfo(const Bus* bus_ptr) const;
         void SetRouteDistances(const std::vector<const Stop*>& route, bool is_circle);
         void SetCircleRouteDistances(const std::vector<const Stop*>& route);
         void SetNotCircleRouteDistances(const std::vector<const Stop*>& route);
-        double ComputeRouteLength(const std::vector<const Stop*>& route, bool is_circle) const;
+        RouteLength ComputeCircleRouteLength(const std::vector<const Stop*>& route) const;
+        RouteLength ComputeNotCircleRouteLength(const std::vector<const Stop*>& route) const;
+        RouteLength ComputeRouteLength(const std::vector<const Stop*>& route, bool is_circle) const;
     };
 }

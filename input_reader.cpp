@@ -32,40 +32,56 @@ namespace transport_catalogue {
             return queue;
         }
 
-        /*std::string_view ParseАppellation(std::string_view& bus_request) {
-            bus_request.remove_prefix(bus_request.find_first_not_of(' '));
+        std::string_view ParseАppellation(std::string_view& request) {
+            request.remove_prefix(request.find_first_of(' '));
+            request.remove_prefix(request.find_first_not_of(' '));
 
-            std::string_view bus_num;
-            size_t pos = bus_request.find_first_of(':');
-            bus_num = bus_request.substr(0, pos);
-            bus_request.remove_prefix(pos + 1);
+            std::string_view appellation;
+            size_t pos = request.find_first_of(':');
+            appellation = request.substr(0, pos);
+            request.remove_prefix(pos + 1);
             
-            return bus_num;
-        }*/
-
-        std::string_view ParseАppellation(std::string_view& bus_request) {
-            bus_request.remove_prefix(bus_request.find_first_of(' '));
-            bus_request.remove_prefix(bus_request.find_first_not_of(' '));
-
-            std::string_view bus_num;
-            size_t pos = bus_request.find_first_of(':');
-            bus_num = bus_request.substr(0, pos);
-            bus_request.remove_prefix(pos + 1);
-            
-            return bus_num;
+            return appellation;
         }
 
-        Coordinates ParseCoords(std::string_view request) {
-            std::istringstream i{std::string(request)};
-
+        Coordinates ParseCoords(std::string_view& request) {
+            request.remove_prefix(request.find_first_not_of(' '));
             double x, y;
-            char comma;
-            i >> x >> comma >> y;
-
+            size_t pos = request.find_first_of(',');
+            std::string tmp = std::string(request.substr(0, pos));
+            x = std::stod(std::string(request.substr(0, pos + 1)));
+            request.remove_prefix(pos + 1);
+            request.remove_prefix(request.find_first_not_of(' '));
+            y = std::stod(std::string(request.substr(0, request.find_first_of(','))));
+            pos = request.find_first_of(' ');
+            if (pos == std::string_view::npos) {
+                request = "";
+            }
+            request.remove_prefix(request.find_first_of(' '));
+            
             return Coordinates{x, y};
         }
 
-        Stop ParseStopRequest(std::string_view stop_request) {
+        std::vector<std::pair<double, std::string>> ParseAddInfo(std::string_view& stop_request) {
+            std::vector<std::pair<double, std::string>> result;
+            std::string_view distance;
+            std::string_view destination;
+            while (size_t pos = stop_request.find_first_not_of(' ')) {
+                stop_request.remove_prefix(pos);
+                std::string_view distance = stop_request.substr(0, stop_request.find_first_of('m'));
+                stop_request.remove_prefix(stop_request.find_first_of('t') + 2);
+                stop_request.remove_prefix(stop_request.find_first_not_of(' '));
+                size_t position = stop_request.find_first_of(',');
+                std::string_view destination = stop_request.substr(0, position);
+                result.push_back({std::stod(std::string(distance)), std::string(destination)});
+                stop_request.remove_prefix(position + 1);
+            }
+
+
+            return result;
+        }
+
+        Stop ParseStopRequest(std::string_view& stop_request) {
             std::string stop_name = std::string(ParseАppellation(stop_request));
             Coordinates coords = ParseCoords(stop_request);
 
@@ -112,6 +128,7 @@ namespace transport_catalogue {
         void ParseInput(TransportCatalogue& obj) {
             int req_counter = input::ReadLineWithNumber();
             std::queue<std::string> request_queue;
+            std::vector<ActualDistance> distances; 
 
             for (int i = 0; i < req_counter; ++i) {
                 std::string request = ReadLine(std::cin);
@@ -119,8 +136,19 @@ namespace transport_catalogue {
                 if (req_type == Requests::BUS) {
                     request_queue.push(request);
                 } else {
-                    Stop bus_stop = ParseStopRequest(request);
+                    std::string_view view = request;
+                    Stop bus_stop = ParseStopRequest(view);
+                    if (view.find_first_of(' ') != std::string_view::npos) {
+                        distances.push_back({bus_stop.stop_name_, ParseAddInfo(view)});
+                    }
                     obj.AddStop(std::move(bus_stop));
+                }
+            }
+
+            for (const auto& actual: distances) {
+                std::string_view from = actual.from;
+                for (const auto& [distance, to]: actual.dist) {
+                    obj.SetActualDistance(from, to, distance);
                 }
             }
 

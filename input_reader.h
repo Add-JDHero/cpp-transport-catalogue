@@ -6,7 +6,12 @@
 #include "transport_catalogue.h"
 
 
-namespace transport_catalogue { 
+namespace transport_catalogue {
+    struct ActualDistance {
+        std::string from;
+        std::vector<std::pair<double, std::string>> dist;
+    };
+
     enum class Requests {
         BUS,
         STOP,
@@ -18,12 +23,11 @@ namespace transport_catalogue {
 
         std::queue<std::string> ReadRequests(std::istream& input);
 
+        std::vector<std::pair<double, std::string>> ParseAddInfo(std::string_view& stop_request);
         std::string_view ParseАppellation(std::string_view& reuqest);
-        //std::string ParseStop(std::string_view& stop_reuqest);
-        Coordinates ParseCoords(std::string_view request);
-        transport_catalogue::Stop ParseStopRequest(std::string_view stop_request);
+        Coordinates ParseCoords(std::string_view& request);
+        transport_catalogue::Stop ParseStopRequest(std::string_view& stop_request);
 
-        //std::string_view ParseBusNum(std::string_view& bus_request);
         std::string_view ExtractStopName(std::string_view& bus_request, char separator);
         Bus ParseBusRequest(TransportCatalogue& obj, std::string_view bus_request);
 

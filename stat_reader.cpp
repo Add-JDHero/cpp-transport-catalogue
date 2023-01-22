@@ -16,7 +16,7 @@ namespace transport_catalogue {
                 if (!info.empty()) {
                     out << "buses ";
                     bool flag = false;
-                    for (const auto bus_num: info) {
+                    for (const auto& bus_num: info) {
                         if (flag) {
                             out << " ";
                         }
@@ -35,10 +35,13 @@ namespace transport_catalogue {
         void BusInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view appellation) {
             if (catalog.FindBus(appellation)) {
                 auto bus_info = catalog.GetBusInfo(appellation);
+                double length = bus_info.route_length.length;
+                double actual_length = bus_info.route_length.actual_length;
                 out << bus_info.stops_on_route << " stops on route, "
                     << bus_info.unique_stops << " unique stops, "
                     << std::setprecision(6) 
-                    << bus_info.route_length << " route length\n";
+                    << actual_length << " route length, "
+                    << actual_length / length << " curvature\n";
             } else {
                 out << "not found\n";
             }
@@ -49,13 +52,9 @@ namespace transport_catalogue {
             std::string_view tmp = request;
             std::string_view appellation = transport_catalogue::input::ParseАppellation(tmp);
             Requests req_type = request.substr(0, request.find_first_of(' ')) == "Bus" ? Requests::BUS : Requests::STOP;
-
+            
             out << request << ": ";
-            if (req_type == Requests::BUS) {
-                BusInfo(out, catalog, appellation);
-            } else {
-                StopInfo(out, catalog, appellation);
-            }
+            req_type == Requests::BUS ? BusInfo(out, catalog, appellation) : StopInfo(out, catalog, appellation);
         }
 
         void OutputData(const TransportCatalogue& catalog, std::ostream& out) {
