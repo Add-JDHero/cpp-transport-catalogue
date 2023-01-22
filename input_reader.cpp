@@ -77,7 +77,6 @@ namespace transport_catalogue {
                 stop_request.remove_prefix(position + 1);
             }
 
-
             return result;
         }
 

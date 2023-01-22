@@ -7,16 +7,6 @@
 
 
 namespace transport_catalogue {
-    struct ActualDistance {
-        std::string from;
-        std::vector<std::pair<double, std::string>> dist;
-    };
-
-    enum class Requests {
-        BUS,
-        STOP,
-    };
- 
     namespace input {
         std::string ReadLine(std::istream& input);
         int ReadLineWithNumber();
