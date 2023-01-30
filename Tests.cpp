@@ -19,6 +19,24 @@ namespace transport_catalogue {
             std::cout << "Add stop: OK\n";
         }
 
+        bool operator==(const std::vector<std::pair<double, std::string>>& lhs, const std::vector<std::pair<double, std::string>>& rhs) {
+            size_t size = lhs.size();
+            if (rhs.size() != size) { return false; }
+            bool flag = true;
+            int i = 0;
+            while (flag && (i < size)) {
+                flag = (lhs[i].first == rhs[i].first) && (lhs[i].second == rhs[i].second);
+                ++i; 
+            }
+
+            return flag;
+        }
+
+        bool operator==(const ActualDistance& lhs, const ActualDistance& rhs) {
+
+            return (lhs.from == rhs.from) && lhs.dist == rhs.dist;
+        }
+
         void ParseAddInfo() {
             transport_catalogue::TransportCatalogue map;
             std::vector<std::string_view> Stops{
@@ -43,6 +61,14 @@ namespace transport_catalogue {
                 }
             }
 
+            ActualDistance tmp{"Biryulyovo Zapadnoye", {{7500, "Rossoshanskaya ulitsa"}, {1800, "Biryusinka"}, {2400, "Universam"}}};
+            assert(buffer[3] == tmp);
+            tmp = {"Universam", {{5600, "Rossoshanskaya ulitsa"}, {900, "Biryulyovo Tovarnaya"}}};
+            assert(buffer[5] == tmp);
+            tmp = {"Universam", {{5600, "Rossoshanskaya ulitsa"}}};
+            assert(!(buffer[5] == tmp));
+            assert(!(buffer[6] == tmp));
+
             std::cout << "ParseAddInfo: OK\n";
         }
 
@@ -50,32 +76,33 @@ namespace transport_catalogue {
             using namespace std::literals;
             transport_catalogue::TransportCatalogue map;
             std::vector<std::string> Stops{
-                " Tolstopaltsevo: 55.611087, 37.208290",
-                "Marushkino   : 55.595884, 37.209755",
-                "Rasskazovka: 55.632761, 37.333324",
-                "Biryulyovo Zapadnoye: 55.574371, 37.651700",
-                "Biryusinka: 55.581065, 37.648390",
-                " Universam: 55.587655, 37.645687",
-                "  Biryulyovo Tovarnaya: 55.592028, 37.653656",
-                "Biryulyovo Passazhirskaya   : 55.580999, 37.659164"
+                "Stop Tolstopaltsevo: 55.611087, 37.208290",
+                "StopMarushkino: 55.595884, 37.209755",
+                "StopRasskazovka: 55.632761, 37.333324",
+                "StopBiryulyovo Zapadnoye: 55.574371, 37.651700",
+                "StopBiryusinka: 55.581065, 37.648390",
+                "Stop Universam: 55.587655, 37.645687",
+                "Stop  Biryulyovo Tovarnaya: 55.592028, 37.653656",
+                "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164"
             };
-            std::string_view tmp = "  Biryulyovo Tovarnaya: 55.592028, 37.653656";
+
+            std::string_view tmp = "Stop  Biryulyovo Tovarnaya: 55.592028, 37.653656";
             assert(transport_catalogue::input::ParseАppellation(tmp) == "Biryulyovo Tovarnaya"sv);
-            tmp = "Biryulyovo Passazhirskaya   : 55.580999, 37.659164";
+            tmp = "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164";
             assert(transport_catalogue::input::ParseАppellation(tmp) == "Biryulyovo Passazhirskaya"sv);
         }
 
         void ParseStopRequest() {
             transport_catalogue::TransportCatalogue map;
             std::vector<std::string> Stops{
-                "Tolstopaltsevo: 55.611087, 37.208290",
-                "Marushkino: 55.595884, 37.209755",
-                "Rasskazovka: 55.632761, 37.333324",
-                "Biryulyovo Zapadnoye: 55.574371, 37.651700",
-                "Biryusinka: 55.581065, 37.648390",
-                " Universam: 55.587655, 37.645687",
-                "  Biryulyovo Tovarnaya: 55.592028, 37.653656",
-                "Biryulyovo Passazhirskaya   : 55.580999, 37.659164"
+                "Stop Tolstopaltsevo: 55.611087, 37.208290",
+                "Stop Marushkino: 55.595884, 37.209755",
+                "Stop Rasskazovka: 55.632761, 37.333324",
+                "Stop Biryulyovo Zapadnoye: 55.574371, 37.651700",
+                "Stop Biryusinka: 55.581065, 37.648390",
+                "Stop  Universam: 55.587655, 37.645687",
+                "Stop  Biryulyovo Tovarnaya: 55.592028, 37.653656",
+                "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164"
             };
             
             for (const std::string& str: Stops) {
@@ -95,19 +122,19 @@ namespace transport_catalogue {
         void ParseBusRequest() {
             transport_catalogue::TransportCatalogue map;
             std::vector<std::string> Buses{
-                "256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye",
-                "750: Tolstopaltsevo - Marushkino - Rasskazovka"
+                "Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye",
+                "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka"
             };
 
             std::vector<std::string> Stops{
-                "Tolstopaltsevo: 55.611087, 37.208290",
-                "Marushkino: 55.595884, 37.209755",
-                "Rasskazovka: 55.632761, 37.333324",
-                "Biryulyovo Zapadnoye: 55.574371, 37.651700",
-                "Biryusinka: 55.581065, 37.648390",
-                " Universam: 55.587655, 37.645687",
-                "  Biryulyovo Tovarnaya: 55.592028, 37.653656",
-                "Biryulyovo Passazhirskaya   : 55.580999, 37.659164"
+                "Stop Tolstopaltsevo: 55.611087, 37.208290",
+                "Stop  Marushkino: 55.595884, 37.209755",
+                "Stop Rasskazovka: 55.632761, 37.333324",
+                "Stop Biryulyovo Zapadnoye: 55.574371, 37.651700",
+                "Stop Biryusinka: 55.581065, 37.648390",
+                "Stop  Universam: 55.587655, 37.645687",
+                "Stop  Biryulyovo Tovarnaya: 55.592028, 37.653656",
+                "Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164"
             };
 
             
@@ -131,7 +158,7 @@ namespace transport_catalogue {
             ParseАppellation();
             ParseStopRequest();
             ParseBusRequest();
-            std::cout << "All tests: OK\n";
+            std::cout << "All tests: OK\n\n";
         }
     }
 }

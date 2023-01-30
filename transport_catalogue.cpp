@@ -1,5 +1,7 @@
 #include "transport_catalogue.h"
 #include "detail.h"
+#include "geo.h"
+
 #include <algorithm>
 
 namespace transport_catalogue {
@@ -15,15 +17,17 @@ namespace transport_catalogue {
         if (stopname_to_stop_.count(stop_name) == 0) {
             return nullptr;
         }
+
         return stopname_to_stop_.at(stop_name);
     }
 
     void TransportCatalogue::AddBus(const Bus& bus_data) {
-        buses_.push_back(bus_data);
-        busname_to_bus_[buses_.back().bus_num_] = &buses_.back();
-        SetRouteDistances(bus_data.route_, bus_data.flag_);
-        for (auto stop_ptr: bus_data.unique_stops) {
-            stopname_to_bus_[stop_ptr].insert(bus_data.bus_num_);
+        buses_.push_back(std::move(bus_data));
+        const Bus* bus_ref = &buses_.back();
+        busname_to_bus_[bus_ref->bus_num_] = bus_ref;
+        SetRouteDistances(bus_ref->route_, bus_ref->flag_);
+        for (auto stop_ptr: bus_ref->unique_stops) {
+            stopname_to_bus_[stop_ptr].insert(bus_ref->bus_num_);
         }
     }
 
@@ -31,6 +35,7 @@ namespace transport_catalogue {
         if (busname_to_bus_.count(bus_num) == 0) {
             return nullptr;
         }
+
         return busname_to_bus_.at(bus_num);
     }
 
@@ -47,28 +52,23 @@ namespace transport_catalogue {
         return stops_.size();
     }
 
-    const BusInfo TransportCatalogue::CreateBusInfo(const Bus* bus_ptr) const{
+    const BusInfo TransportCatalogue::CreateBusInfo(const Bus* bus_ptr) const {
         std::string_view bus_num = bus_ptr->bus_num_;
         int unique_stops = bus_ptr->unique_stops.size();
         int stops_on_route;
         bool is_circle = bus_ptr->flag_;
+
         if (is_circle) {
             stops_on_route = bus_ptr->route_.size();
         } else {
             stops_on_route = bus_ptr->route_.size() * 2 - 1;
         }
 
-        RouteLength route_length = ComputeRouteLength(bus_ptr->route_, is_circle);
-
-        return BusInfo{bus_num, stops_on_route, unique_stops, route_length};
+        return BusInfo{bus_num, stops_on_route, unique_stops};
     }
 
     void TransportCatalogue::SetRouteDistances(const std::vector<const Stop*>& route, bool is_circle) {
-        if (is_circle) {
-            SetCircleRouteDistances(route);
-        } else {
-            SetNotCircleRouteDistances(route);
-        }
+        is_circle ? SetCircleRouteDistances(route) : SetNotCircleRouteDistances(route);
     }
 
     RouteLength TransportCatalogue::ComputeCircleRouteLength(const std::vector<const Stop*>& route) const {
@@ -76,9 +76,8 @@ namespace transport_catalogue {
         double actual_length = 0;
         for (auto it = route.begin(); it != route.end() - 1; ++it) {
             auto stop_ptr = *it;
-            auto next_stop_ptr = *(it +1);
-            auto pair = std::make_pair(stop_ptr, next_stop_ptr);
-            double add = distances_.at(pair);
+            auto next_stop_ptr = *(it + 1);
+            double add = distances_.at({stop_ptr, next_stop_ptr});
             length += add;
             add = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, true);
             actual_length += add;
@@ -109,7 +108,7 @@ namespace transport_catalogue {
             auto next_stop_ptr = *(it + 1);
             double add1 = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, false);
             double add2;
-            length += add1 * 2;
+            length += add1 + add1;
             add1 = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, true);
             add2 = GetDistanceBetweenStops(next_stop_ptr, stop_ptr, true);
             actual_length += add1 + add2;
@@ -121,6 +120,7 @@ namespace transport_catalogue {
 
     RouteLength TransportCatalogue::ComputeRouteLength(const std::vector<const Stop*>& route, bool is_circle) const {
         RouteLength result = is_circle ? this->ComputeCircleRouteLength(route) : this->ComputeNotCircleRouteLength(route);
+        
         return result;
     }
 
@@ -155,12 +155,13 @@ namespace transport_catalogue {
         size_t buses = stopname_to_bus_.count(stop_ptr);
         if (buses != 0) {
             return stopname_to_bus_.at(this->FindStop(stop_name));
-        } 
+        }
+
         return {};
     }
 
     void TransportCatalogue::SetActualDistance(std::string_view from, std::string_view to, double distance) {
-        actual_distances_[{this->FindStop(from), this->FindStop(to) }] = distance;
+        actual_distances_[{ this->FindStop(from), this->FindStop(to) }] = distance;
     }
 }
 

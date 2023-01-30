@@ -6,11 +6,10 @@
 #include <utility>
 #include <vector>
 #include <unordered_set>
+#include "geo.h"
 
 namespace transport_catalogue {
     namespace detail {
-        const int SIMPLE_NUMBER = 37;
-
         struct RouteLength {
             double length;
             double actual_length;
@@ -29,6 +28,7 @@ namespace transport_catalogue {
             Bus(std::string_view bus_num, const std::vector<const Stop*>& route, const std::unordered_set<const Stop*>& unq, const bool flag)
                 : bus_num_(bus_num), route_(route), unique_stops(unq), flag_(flag)
             {}
+            
             std::string bus_num_;
             std::vector<const Stop*> route_;
             std::unordered_set<const Stop*> unique_stops;
@@ -39,7 +39,6 @@ namespace transport_catalogue {
             std::string_view bus_num;
             int stops_on_route;
             int unique_stops;
-            RouteLength route_length;
         };
 
         struct ActualDistance {

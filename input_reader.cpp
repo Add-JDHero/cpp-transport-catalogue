@@ -127,7 +127,7 @@ namespace transport_catalogue {
         void ParseInput(TransportCatalogue& obj) {
             int req_counter = input::ReadLineWithNumber();
             std::queue<std::string> request_queue;
-            std::vector<ActualDistance> distances; 
+            std::vector<ActualDistance> distances;
 
             for (int i = 0; i < req_counter; ++i) {
                 std::string request = ReadLine(std::cin);

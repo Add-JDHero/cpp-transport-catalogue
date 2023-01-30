@@ -33,15 +33,15 @@ namespace transport_catalogue {
         }
 
         void BusInfo(std::ostream& out, const TransportCatalogue& catalog, std::string_view appellation) {
-            if (catalog.FindBus(appellation)) {
+            const Bus* ptr = catalog.FindBus(appellation);
+            if (ptr != nullptr) {
                 auto bus_info = catalog.GetBusInfo(appellation);
-                double length = bus_info.route_length.length;
-                double actual_length = bus_info.route_length.actual_length;
+                RouteLength route_length = catalog.ComputeRouteLength(ptr->route_, ptr->flag_);
                 out << bus_info.stops_on_route << " stops on route, "
                     << bus_info.unique_stops << " unique stops, "
                     << std::setprecision(6) 
-                    << actual_length << " route length, "
-                    << actual_length / length << " curvature\n";
+                    << route_length.actual_length << " route length, "
+                    << route_length.actual_length / route_length.length << " curvature\n";
             } else {
                 out << "not found\n";
             }
