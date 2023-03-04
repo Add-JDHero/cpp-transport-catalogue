@@ -1,0 +1,67 @@
+{
+  "base_requests": [
+    {
+      "type": "Bus",
+      "name": "0",
+      "stops": [],
+      "is_roundtrip": false
+    },
+    {
+      "type": "Bus",
+      "name": "114",
+      "stops": ["Морской вокзал", "Ривьерский мост"],
+      "is_roundtrip": false
+    },
+    {
+     "type": "Bus",
+      "name": "115",
+      "stops": ["Морской вокзал", "Ривьерский мост", "Ленинский проспект", "Ленинский проспект"],
+      "is_roundtrip": false
+    },
+    {
+      "type": "Bus",
+      "name": "116",
+      "stops": ["Морской вокзал", "Ривьерский мост", "Октябрьский проспект", "Тестовый проспект", "Тестовый проспект", "Тестовый проспект"],
+      "is_roundtrip": true
+    },
+    {
+      "type": "Stop",
+      "name": "Ривьерский мост",
+      "latitude": 43.587795,
+      "longitude": 39.716901,
+      "road_distances": {"Морской вокзал": 850}
+    },
+    {
+      "type": "Stop",
+      "name": "Морской вокзал",
+      "latitude": 43.581969,
+      "longitude": 39.719848,
+      "road_distances": {"Ривьерский мост": 850}
+    },
+    {
+      "type": "Stop",
+      "name": "Ленинский проспект",
+      "latitude": 33.587795,
+      "longitude": 29.716901,
+      "road_distances": {"Морской вокзал": 750}
+    },
+    {
+      "type": "Stop",
+      "name": "Октябрьский проспект",
+      "latitude": 23.581969,
+      "longitude": 19.719848,
+      "road_distances": {"Ривьерский мост": 650}
+    },
+    {
+      "type": "Stop",
+      "name": "Тестовый проспект",
+      "latitude": 13.581969,
+      "longitude": 9.719848,
+      "road_distances": {"Ривьерский мост": 550}
+    }
+  ],
+  "stat_requests": [
+    { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
+    { "id": 2, "type": "Bus", "name": "114" }
+  ]
+}

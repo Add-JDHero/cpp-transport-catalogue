@@ -1,13 +1,7 @@
 #include "transport_catalogue.h"
-#include "detail.h"
-#include "geo.h"
-
 #include <algorithm>
 
 namespace transport_catalogue {
-    using Stop = transport_catalogue::detail::Stop;
-    using Bus = transport_catalogue::detail::Bus;
-
     void TransportCatalogue::AddStop(const Stop& stop_data) {
         stops_.push_back(std::move(stop_data));
         stopname_to_stop_[stops_.back().stop_name_] = &stops_.back();
@@ -25,7 +19,8 @@ namespace transport_catalogue {
         buses_.push_back(std::move(bus_data));
         const Bus* bus_ref = &buses_.back();
         busname_to_bus_[bus_ref->bus_num_] = bus_ref;
-        SetRouteDistances(bus_ref->route_, bus_ref->flag_);
+        
+        SetGeoDistances(bus_ref->route_);
         for (auto stop_ptr: bus_ref->unique_stops) {
             stopname_to_bus_[stop_ptr].insert(bus_ref->bus_num_);
         }
@@ -67,28 +62,9 @@ namespace transport_catalogue {
         return BusInfo{bus_num, stops_on_route, unique_stops};
     }
 
-    void TransportCatalogue::SetRouteDistances(const std::vector<const Stop*>& route, bool is_circle) {
-        is_circle ? SetCircleRouteDistances(route) : SetNotCircleRouteDistances(route);
-    }
-
-    RouteLength TransportCatalogue::ComputeCircleRouteLength(const std::vector<const Stop*>& route) const {
-        double length = 0;
-        double actual_length = 0;
-        for (auto it = route.begin(); it != route.end() - 1; ++it) {
-            auto stop_ptr = *it;
-            auto next_stop_ptr = *(it + 1);
-            double add = distances_.at({stop_ptr, next_stop_ptr});
-            length += add;
-            add = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, true);
-            actual_length += add;
-        }
-
-        return {length, actual_length};
-    }
-
     double TransportCatalogue::GetDistanceBetweenStops(const Stop* from, const Stop* to, bool is_actual) const {
-        auto pair1 = std::make_pair(from, to);
-        auto pair2 = std::make_pair(to, from);
+        const auto pair1 = std::make_pair(from, to);
+        const auto pair2 = std::make_pair(to, from);
         if ( (actual_distances_.count(pair1) || actual_distances_.count(pair2)) && is_actual ) {
             if (actual_distances_.count(pair1)) {
                 return actual_distances_.at(pair1);
@@ -100,10 +76,25 @@ namespace transport_catalogue {
         }
     }
 
+    RouteLength TransportCatalogue::ComputeCircleRouteLength(const std::vector<const Stop*>& route) const {
+        double length = 0;
+        double actual_length = 0;
+        for (auto it = route.begin(); it != route.end() - 1 && it != route.end(); ++it) {
+            auto stop_ptr = *it;
+            auto next_stop_ptr = *(it + 1);
+            double add = distances_.at({stop_ptr, next_stop_ptr});
+            length += add;
+            add = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, true);
+            actual_length += add;
+        }
+
+        return {length, actual_length};
+    }
+
     RouteLength TransportCatalogue::ComputeNotCircleRouteLength(const std::vector<const Stop*>& route) const {
         double length = 0;
         double actual_length = 0;
-        for (auto it = route.begin(); it != route.end() - 1; ++it) {
+        for (auto it = route.begin(); it != route.end() - 1 && it != route.end(); ++it) {
             auto stop_ptr = *it;
             auto next_stop_ptr = *(it + 1);
             double add1 = GetDistanceBetweenStops(stop_ptr, next_stop_ptr, false);
@@ -124,24 +115,10 @@ namespace transport_catalogue {
         return result;
     }
 
-    void TransportCatalogue::SetCircleRouteDistances(const std::vector<const Stop*>& route) {
+    void TransportCatalogue::SetGeoDistances(const std::vector<const Stop*>& route) {
         auto begin = route.begin();
         auto end = route.end();
-        for (; begin != end - 1; ++begin) {
-            auto stop_ptr = *begin;
-            auto next_stop_ptr = *(begin + 1);
-            distances_[{stop_ptr, next_stop_ptr}] = ComputeDistance(stop_ptr->coords_, next_stop_ptr->coords_);
-        }
-
-        auto end_it = *(end - 1);
-        auto begin_it = *begin;
-        distances_[{end_it, begin_it}] = ComputeDistance(end_it->coords_, begin_it->coords_);
-    }
-
-    void TransportCatalogue::SetNotCircleRouteDistances(const std::vector<const Stop*>& route) {
-        auto begin = route.begin();
-        auto end = route.end();
-        for (; begin != end - 1; ++begin) {
+        for (; begin != end - 1 && begin != end; ++begin) {
             auto stop_ptr = *begin;
             auto next_stop_ptr = *(begin + 1);
             double distance = ComputeDistance(stop_ptr->coords_, next_stop_ptr->coords_);
@@ -150,7 +127,7 @@ namespace transport_catalogue {
         }
     }
 
-    const std::set<std::string> TransportCatalogue::GetStopToBusInfo(std::string_view stop_name) const {
+    const std::set<std::string_view> TransportCatalogue::GetStopToBusInfo(std::string_view stop_name) const {
         const Stop* stop_ptr = this->FindStop(stop_name);
         size_t buses = stopname_to_bus_.count(stop_ptr);
         if (buses != 0) {
