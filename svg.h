@@ -151,6 +151,7 @@ namespace svg {
 
     class Object {
     public:
+        Object() = default;
         void Render(const RenderContext& context) const;
 
         virtual ~Object() = default;
@@ -159,8 +160,9 @@ namespace svg {
         virtual void RenderObject(const RenderContext& context) const = 0;
     };
 
-    class ObjectContainer {
+    /*class ObjectContainer {
     public:
+        ObjectContainer() = default;
         template <typename T>
         void Add(T obj) {
             objects_.emplace_back(std::make_unique<T>(std::move(obj)));
@@ -168,9 +170,24 @@ namespace svg {
         virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
 
     protected:
-        ~ObjectContainer() = default;
+        virtual ~ObjectContainer() = default;
         std::vector<std::unique_ptr<Object>> objects_;
+    };*/
+
+
+    class ObjectContainer {
+    public:
+        template <typename Obj>
+        void Add(Obj obj) {
+            AddPtr(std::make_unique<Obj>(std::move(obj)));
+        }
+
+        virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
+
+    protected:
+        ~ObjectContainer() = default;
     };
+
 
     class Drawable {
     public:
@@ -190,17 +207,17 @@ namespace svg {
             return AsOwner();
         }
 
-        Owner &SetStrokeWidth(double width) {
+        Owner& SetStrokeWidth(double width) {
             stroke_width_ = width;
             return AsOwner();
         }
 
-        Owner &SetStrokeLineCap(StrokeLineCap lineCap) {
+        Owner& SetStrokeLineCap(StrokeLineCap lineCap) {
             stroke_linecamp_ = lineCap;
             return AsOwner();
         }
 
-        Owner &SetStrokeLineJoin(StrokeLineJoin lineJoin) {
+        Owner& SetStrokeLineJoin(StrokeLineJoin lineJoin) {
             stroke_linejoin_ = lineJoin;
             return AsOwner();
         }
@@ -208,7 +225,7 @@ namespace svg {
     protected:
         ~PathProps() = default;
 
-        void RenderAttrs(std::ostream &out) const {
+        void RenderAttrs(std::ostream&out) const {
             using namespace std::literals;
 
             if (fill_color_) {
@@ -229,10 +246,10 @@ namespace svg {
         }
 
     private:
-        Owner &AsOwner() {
+        Owner& AsOwner() {
             // static_cast безопасно преобразует *this к Owner&,
             // если класс Owner — наследник PathProps
-            return static_cast<Owner &>(*this);
+            return static_cast<Owner&>(*this);
         }
 
         std::optional<Color> fill_color_;
@@ -309,6 +326,8 @@ namespace svg {
 
         // Выводит в ostream svg-представление документа
         void Render(std::ostream& out) const;
+    private:
+        std::vector<std::unique_ptr<Object>> objects_;
     };
 
 

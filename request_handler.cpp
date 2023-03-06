@@ -1,4 +1,6 @@
 #include "request_handler.h"
+#include <algorithm>
+#include <numeric>
 
 /*
  * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
@@ -7,78 +9,42 @@
  * Если вы затрудняетесь выбрать, что можно было бы поместить в этот файл,
  * можете оставить его пустым.
  */
-
-#include "json_reader.h"
-
-#include <iostream>
-#include <iomanip>
-#include <queue>
-
-//using std::string_literals::operator""sv;
-
-
 namespace transport_catalogue {
-    namespace output {
-        json::Node StopInfo(const TransportCatalogue& catalog, const json::Node& request) {
-            std::string_view stop_name = request.AsMap().at("name").AsString();
-            json::Dict result;
-            result["request_id"] = request.AsMap().at("id").AsInt();
 
-            if (catalog.FindStop(stop_name)) {
-                const std::set<std::string_view> info = catalog.GetStopToBusInfo(stop_name);
-                json::Array buses;
-                for (auto it = info.begin(); it != info.end(); ++it) {
-                    buses.push_back(json::Node(std::string(*it)));
-                }
 
-                result["buses"] = std::move(buses);
-            } else {
-                result["error_message"] = "not found";
-            }
-
-            return result;
-        }
-
-        json::Node BusInfo(const TransportCatalogue& catalog, const json::Node& request) {
-            std::string_view bus_num = request.AsMap().at("name").AsString();
-            const Bus* ptr = catalog.FindBus(bus_num);
-            json::Dict result;
-            result["request_id"] = request.AsMap().at("id").AsInt();
-            if (ptr != nullptr) {
-                auto bus_info = catalog.GetBusInfo(bus_num);
-                RouteLength route_length = catalog.ComputeRouteLength(ptr->route_, ptr->flag_);
-                result["curvature"] = route_length.actual_length / route_length.length;
-                result["route_length"] = route_length.actual_length;
-                result["stop_count"] = bus_info.stops_on_route;
-                result["unique_stop_count"] = bus_info.unique_stops;
-            } else {
-                result["error_message"] = "not found";
-            }
-
-            return result;
-        }
-
-        json::Node FoundInfo( const TransportCatalogue& catalog, const json::Node& request) {
-            if (request.AsMap().at("type").AsString() == "Bus") {
-                return BusInfo(catalog, request);
-            } else {
-                return StopInfo(catalog, request);
-            }
-
-        }
-
-        void OutputData(std::ostream& out, const TransportCatalogue& catalog, const json::Array& doc) {
-            std::queue<const json::Node*> request_queue = transport_catalogue::input::ReadRequests(doc);
-            size_t n = request_queue.size();
-            json::Array output_json(n);
-            for (int i = 0; i < n; ++i) {
-                const json::Node* request = request_queue.front();
-                
-                output_json[i] = FoundInfo(catalog, *request);
-                request_queue.pop();
-            }
-
-            json::Print(json::Document(output_json), out);
-        }
+    RequestHandler::RequestHandler(const TransportCatalogue& db, const map_renderer::MapRenderer& renderer) :
+        catalogue_(db),
+        renderer_(renderer) {
     }
+
+    // Возвращает информацию о маршруте (запрос Bus)
+    std::optional<BusInfo> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
+        if (const auto bus = catalogue_.FindBus(bus_name)) {
+            return std::optional<BusInfo>{catalogue_.GetBusInfo(bus_name)};
+        }
+
+        return std::nullopt;
+    }
+
+    // Возвращает маршруты, проходящие через
+    const std::set<std::string_view> RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
+        return catalogue_.GetStopToBusInfo(stop_name);
+    }
+
+    svg::Document RequestHandler::RenderMap() const {
+        std::vector<BusPtr> buses(catalogue_.BusesCount());
+        const std::deque<Bus>& buses_order = catalogue_.GetBusesByOrder();
+        std::transform(
+            buses_order.begin(), buses_order.end(),
+            buses.begin(),
+            [](const auto& p) {
+                return &p; });
+
+        std::sort(begin(buses), end(buses), [](const auto& lhs, const auto& rhs) 
+            { return std::lexicographical_compare(lhs->bus_num_.begin(), lhs->bus_num_.end(), rhs->bus_num_.begin(), rhs->bus_num_.end());}
+        );
+
+        return renderer_.RenderMap(buses.begin(), buses.end());
+    }
+
 }

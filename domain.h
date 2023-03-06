@@ -22,6 +22,11 @@ namespace transport_catalogue {
     namespace domain {
         using Coordinates = geo::Coordinates;
 
+        inline const double EPSILON = 1e-6;
+        inline bool IsZero(double value) {
+            return std::abs(value) < EPSILON;
+        }
+
         struct RouteLength {
             double length;
             double actual_length;
@@ -47,6 +52,9 @@ namespace transport_catalogue {
             bool flag_;
         };
 
+        using BusPtr = const Bus*;
+        using StopPtr = const Stop*;
+
         struct BusInfo {
             std::string_view bus_num;
             int stops_on_route;
@@ -64,6 +72,16 @@ namespace transport_catalogue {
             BASEREQUEST,
             STATREQUEST,
         };
+
+        struct StopComparator {
+            bool operator()(StopPtr lhs, StopPtr rhs) const {
+                return lhs->stop_name_ < rhs->stop_name_;
+            }
+        };
+
+        /*bool StopComparator::operator()(StopPtr lhs, StopPtr rhs) const {
+            return lhs->stop_name_ < rhs->stop_name_;
+        }*/
 
         class PointersHasher {
         public:

@@ -28,7 +28,7 @@ namespace svg {
     void Circle::RenderObject(const RenderContext& context) const {
         auto& out = context.out;
         out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
-        out << "r=\""sv << radius_ << "\" "sv;
+        out << "r=\""sv << radius_ << "\""sv;
         RenderAttrs(out);
         out << "/>"sv;
     }
@@ -113,8 +113,8 @@ namespace svg {
 
     // Выводит в ostream svg-представление документа
     void Document::Render(std::ostream& out) const {
-        std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
-        std::cout << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
+        out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
+        out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
 
         for (auto& obj_ptr : objects_){
             auto& temp = *obj_ptr;
@@ -122,7 +122,7 @@ namespace svg {
             temp.Render(ctx);
         }
 
-        out << "</svg>"sv << std::endl;
+        out << "</svg>"sv;
     }
 
 }  // namespace svg

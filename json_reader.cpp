@@ -1,9 +1,29 @@
 #include "json_reader.h"
+#include "map_renderer.h"
+#include "request_handler.h"
+
 #include <queue>
 #include <iostream>
+#include <sstream>
 
 namespace transport_catalogue {
+
+    void ParseRequests(const json::Document& doc, TransportCatalogue& obj) {
+            const json::Dict* requests = &doc.GetRoot().AsMap();
+            const json::Array* base_req = &requests->at("base_requests").AsArray();
+            const json::Array& stat_request = doc.GetRoot().AsMap().at("stat_requests").AsArray();
+
+            
+            input::FillDatabase(obj, *base_req);
+
+            map_renderer::MapRenderer renderer(map_renderer::input::ParseRenderSettings(doc));
+            RequestHandler request_handler(obj, renderer);
+
+            output::OutputData(std::cout, obj, stat_request, request_handler);
+    }
+
     namespace input {
+        
         std::string ReadLine(std::istream& input) {
             std::string s;
             std::getline(input, s);
@@ -30,6 +50,7 @@ namespace transport_catalogue {
             return queue;
         }
 
+
         /*
         * Sets the "real" distances between stops in the transport directory
         */
@@ -52,12 +73,12 @@ namespace transport_catalogue {
             }
         }
 
-        void ParseInput(const json::Document& doc, TransportCatalogue& obj) {
+        /*void ParseRequests(const json::Document& doc, TransportCatalogue& obj) {
             const json::Dict* requests = &doc.GetRoot().AsMap();
             const json::Array* base_req = &requests->at("base_requests").AsArray();
             
             FillDatabase(obj, *base_req);
-        }
+        }*/
 
         void FillDatabase(TransportCatalogue& obj, const json::Array& base_request) {
             std::queue<int> request_queue;
@@ -118,6 +139,84 @@ namespace transport_catalogue {
             }
 
             return Bus(bus_num, std::move(route), std::move(unique_stops), is_round);
+        }
+    }
+
+    namespace output {
+        json::Node StopInfo(const TransportCatalogue& catalog, const json::Node& request) {
+            std::string_view stop_name = request.AsMap().at("name").AsString();
+            json::Dict result;
+            result["request_id"] = request.AsMap().at("id").AsInt();
+
+            if (catalog.FindStop(stop_name)) {
+                const std::set<std::string_view> info = catalog.GetStopToBusInfo(stop_name);
+                json::Array buses;
+                for (auto it = info.begin(); it != info.end(); ++it) {
+                    buses.push_back(json::Node(std::string(*it)));
+                }
+
+                result["buses"] = std::move(buses);
+            } else {
+                result["error_message"] = "not found";
+            }
+
+            return result;
+        }
+
+        json::Node BusInfo(const TransportCatalogue& catalog, const json::Node& request) {
+            std::string_view bus_num = request.AsMap().at("name").AsString();
+            const Bus* ptr = catalog.FindBus(bus_num);
+            json::Dict result;
+            result["request_id"] = request.AsMap().at("id").AsInt();
+            if (ptr != nullptr) {
+                auto bus_info = catalog.GetBusInfo(bus_num);
+                RouteLength route_length = catalog.ComputeRouteLength(ptr->route_, ptr->flag_);
+                result["curvature"] = route_length.actual_length / route_length.length;
+                result["route_length"] = route_length.actual_length;
+                result["stop_count"] = bus_info.stops_on_route;
+                result["unique_stop_count"] = bus_info.unique_stops;
+            } else {
+                result["error_message"] = "not found";
+            }
+
+            return result;
+        }
+
+        json::Node FoundInfo( const TransportCatalogue& catalog, const json::Node& request, const RequestHandler& req_handler) {
+            const std::string& rec_type = request.AsMap().at("type").AsString();
+            if (rec_type == "Bus") {
+                return BusInfo(catalog, request);
+            } else if (rec_type == "Stop") {
+                return StopInfo(catalog, request);
+            } else if (rec_type == "Map") {
+                return MapRequest(request, req_handler);
+            }
+            return rec_type == "Bus" ? BusInfo(catalog, request) : StopInfo(catalog, request);
+        }
+
+        void OutputData(std::ostream& out, const TransportCatalogue& catalog, const json::Array& doc, const RequestHandler& req_handler) {
+            std::queue<const json::Node*> request_queue = transport_catalogue::input::ReadRequests(doc);
+            size_t n = request_queue.size();
+            json::Array output_json(n);
+            for (int i = 0; i < n; ++i) {
+                const json::Node* request = request_queue.front();
+                
+                output_json[i] = FoundInfo(catalog, *request, req_handler);
+                request_queue.pop();
+            }
+
+            json::Print(json::Document(output_json), out);
+        }
+
+        json::Node MapRequest(const json::Node& req, const RequestHandler& req_handler) {
+            std::ostringstream out;
+            req_handler.RenderMap().Render(out);
+
+            json::Dict result;
+            result["request_id"s] = req.AsMap().at("id"s).AsInt();
+            result["map"] = out.str();
+
+            return result;
         }
     }
 }

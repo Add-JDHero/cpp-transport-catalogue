@@ -4,7 +4,8 @@
 #include "transport_catalogue.h"
 #include "json_reader.h"
 #include "request_handler.h"
-#include "input_tests.h"
+//#include "input_tests.h"
+#include "map_renderer.h"
 
 //#define TEST
 //#define DURATION
@@ -31,11 +32,17 @@ int main() {
      * Вывести в stdout ответы в виде JSON
      */
 #ifdef MAIN_PROG
+    using namespace transport_catalogue;
+    using namespace map_renderer;
     transport_catalogue::TransportCatalogue map;
 
-    const json::Document tmp = json::Load(std::cin);
+    const json::Document& document = json::Load(std::cin);
 
-    transport_catalogue::input::ParseInput(tmp, map);
-    transport_catalogue::output::OutputData(std::cout, map, tmp.GetRoot().AsMap().at("stat_requests").AsArray());
+    transport_catalogue::ParseRequests(document, map);
+
+    /*map_renderer::MapRenderer renderer(map_renderer::input::ParseRenderSettings(document));
+    RequestHandler request_handler(map, renderer);
+    request_handler.RenderMap().Render(std::cout);*/
+
 #endif
 }
