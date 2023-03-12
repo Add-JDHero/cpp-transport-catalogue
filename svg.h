@@ -160,21 +160,6 @@ namespace svg {
         virtual void RenderObject(const RenderContext& context) const = 0;
     };
 
-    /*class ObjectContainer {
-    public:
-        ObjectContainer() = default;
-        template <typename T>
-        void Add(T obj) {
-            objects_.emplace_back(std::make_unique<T>(std::move(obj)));
-        }
-        virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
-
-    protected:
-        virtual ~ObjectContainer() = default;
-        std::vector<std::unique_ptr<Object>> objects_;
-    };*/
-
-
     class ObjectContainer {
     public:
         template <typename Obj>

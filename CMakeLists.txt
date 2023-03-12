@@ -12,7 +12,8 @@ add_executable(cpp-transport-catalogue main.cpp
     domain.cpp domain.h 
     request_handler.cpp request_handler.h 
     svg.cpp svg.h
-    map_renderer.cpp map_renderer.h 
+    map_renderer.cpp map_renderer.h
+    json_builder.cpp json_builder.h
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

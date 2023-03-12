@@ -125,4 +125,4 @@ namespace svg {
         out << "</svg>"sv;
     }
 
-}  // namespace svg
+}  // namespace svg        // MapRenderer понадобится в следующей части итогового проекта

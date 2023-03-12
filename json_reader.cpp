@@ -1,6 +1,7 @@
 #include "json_reader.h"
 #include "map_renderer.h"
 #include "request_handler.h"
+#include "json_builder.h"
 
 #include <queue>
 #include <iostream>
@@ -42,7 +43,7 @@ namespace transport_catalogue {
         std::queue<const json::Node*> ReadRequests(const json::Array& doc) {
             std::queue<const json::Node*> queue;
 
-            for (int i = 0; i < doc.size(); ++i) {
+            for (size_t i = 0; i < doc.size(); ++i) {
                 const json::Node* ptr = &doc[i];
                 queue.push(ptr);
             }
@@ -73,17 +74,10 @@ namespace transport_catalogue {
             }
         }
 
-        /*void ParseRequests(const json::Document& doc, TransportCatalogue& obj) {
-            const json::Dict* requests = &doc.GetRoot().AsMap();
-            const json::Array* base_req = &requests->at("base_requests").AsArray();
-            
-            FillDatabase(obj, *base_req);
-        }*/
-
         void FillDatabase(TransportCatalogue& obj, const json::Array& base_request) {
             std::queue<int> request_queue;
             std::vector<domain::ActualDistance> distances;
-            for (int i = 0; i < base_request.size(); ++i) {
+            for (size_t i = 0; i < base_request.size(); ++i) {
                 const json::Dict* request = &base_request[i].AsMap();
                 if (request->at("type") == "Bus") {
                     request_queue.push(i);
@@ -130,7 +124,7 @@ namespace transport_catalogue {
             std::unordered_set<const Stop*> unique_stops;
             bool is_round = bus_request.at("is_roundtrip").AsBool();
 
-            for (int i = 0; i < size; ++i) {
+            for (size_t i = 0; i < size; ++i) {
                 const Stop* ptr = obj.FindStop((*stops)[i].AsString());
                 route[i] = ptr;
                 if (!unique_stops.count(ptr)) {
@@ -145,8 +139,9 @@ namespace transport_catalogue {
     namespace output {
         json::Node StopInfo(const TransportCatalogue& catalog, const json::Node& request) {
             std::string_view stop_name = request.AsMap().at("name").AsString();
-            json::Dict result;
-            result["request_id"] = request.AsMap().at("id").AsInt();
+            json::Builder result;
+            result.StartDict()
+                .Key("request_id").Value(request.AsMap().at("id").AsInt());
 
             if (catalog.FindStop(stop_name)) {
                 const std::set<std::string_view> info = catalog.GetStopToBusInfo(stop_name);
@@ -155,31 +150,33 @@ namespace transport_catalogue {
                     buses.push_back(json::Node(std::string(*it)));
                 }
 
-                result["buses"] = std::move(buses);
+                result.Key("buses").Value(std::move(buses));
             } else {
-                result["error_message"] = "not found";
+                result.Key("error_message").Value("not found");
             }
 
-            return result;
+            return result.EndDict().Build().AsMap();
         }
 
         json::Node BusInfo(const TransportCatalogue& catalog, const json::Node& request) {
             std::string_view bus_num = request.AsMap().at("name").AsString();
             const Bus* ptr = catalog.FindBus(bus_num);
-            json::Dict result;
-            result["request_id"] = request.AsMap().at("id").AsInt();
+            json::Builder result;
+            result.StartDict().Key("request_id").Value(request.AsMap().at("id").AsInt());
+            
             if (ptr != nullptr) {
                 auto bus_info = catalog.GetBusInfo(bus_num);
                 RouteLength route_length = catalog.ComputeRouteLength(ptr->route_, ptr->flag_);
-                result["curvature"] = route_length.actual_length / route_length.length;
-                result["route_length"] = route_length.actual_length;
-                result["stop_count"] = bus_info.stops_on_route;
-                result["unique_stop_count"] = bus_info.unique_stops;
+                result.Key("curvature").Value(route_length.actual_length / route_length.length);
+                result.Key("route_length").Value(route_length.actual_length);
+                result.Key("stop_count").Value(bus_info.stops_on_route);
+                result.Key("unique_stop_count").Value(bus_info.unique_stops);
             } else {
-                result["error_message"] = "not found";
+                
+                result.Key("error_message").Value("not found");
             }
 
-            return result;
+            return result.EndDict().Build().AsMap();
         }
 
         json::Node FoundInfo( const TransportCatalogue& catalog, const json::Node& request, const RequestHandler& req_handler) {
@@ -198,7 +195,7 @@ namespace transport_catalogue {
             std::queue<const json::Node*> request_queue = transport_catalogue::input::ReadRequests(doc);
             size_t n = request_queue.size();
             json::Array output_json(n);
-            for (int i = 0; i < n; ++i) {
+            for (size_t i = 0; i < n; ++i) {
                 const json::Node* request = request_queue.front();
                 
                 output_json[i] = FoundInfo(catalog, *request, req_handler);
@@ -212,9 +209,14 @@ namespace transport_catalogue {
             std::ostringstream out;
             req_handler.RenderMap().Render(out);
 
-            json::Dict result;
-            result["request_id"s] = req.AsMap().at("id"s).AsInt();
-            result["map"] = out.str();
+            json::Node result{
+                json::Builder{}
+                .StartDict()
+                    .Key("request_id"s).Value(req.AsMap().at("id"s).AsInt())
+                    .Key("map").Value(out.str())
+                .EndDict()
+                .Build().AsMap()
+            };
 
             return result;
         }

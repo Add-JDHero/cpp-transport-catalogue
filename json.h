@@ -21,6 +21,8 @@ namespace json {
         using variant::variant;
         using Value = variant;
 
+        Node(Value&& value) : Value(move(value)) {}
+
         bool IsInt() const;
         bool IsDouble() const;  // Возвращает true, если в Node хранится int либо double.
         bool IsPureDouble() const;  // Возвращает true, если в Node хранится double.
