@@ -1,5 +1,6 @@
 #pragma once 
 
+#include "ranges.h"
 #include "geo.h"
 #include "domain.h"
 
@@ -19,12 +20,12 @@ namespace transport_catalogue {
         void AddStop(const Stop& stop_data);
         void AddBus(const Bus& bus_data);
 
-       StopPtr FindStop(std::string_view stop_name) const;
+        StopPtr FindStop(std::string_view stop_name) const;
         BusPtr FindBus(std::string_view bus_num) const;
 
         const BusInfo GetBusInfo(std::string_view bus_num) const;
         const std::set<std::string_view> GetStopToBusInfo(std::string_view stop_name) const;
-        double GetDistanceBetweenStops(StopPtr from, StopPtr to, bool is_actual) const;
+        double GetDistanceBetweenStops(StopPtr from, StopPtr to, bool is_actual = true) const;
 
         void SetActualDistance(std::string_view from, std::string_view to, double distance);
 
@@ -33,8 +34,10 @@ namespace transport_catalogue {
         const std::deque<Bus>& GetBusesByOrder() const;
 
         size_t StopsCount() const noexcept;
-
         size_t BusesCount() const noexcept;
+
+        ranges::Range<std::deque<Stop>::const_iterator> GetStopsRange() const;
+        ranges::Range<std::deque<Bus>::const_iterator> GetBusesRange() const;
 
     private:
         std::deque<Stop> stops_;

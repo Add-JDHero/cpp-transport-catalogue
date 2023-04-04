@@ -27,9 +27,9 @@ namespace json {
     
     private:
         Node root_;
-        std::vector<Node*> nodes_stack_;
         bool key_flag_ = false;
-        bool value_flag_ = false; 
+        bool value_flag_ = false;
+        std::vector<Node*> nodes_stack_;
         std::vector<Node*> curr_container_node_;
     };
 

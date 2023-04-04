@@ -8,12 +8,14 @@
 #include "map_renderer.h"
 #include "request_handler.h"
 #include "geo.h"
+#include "json_builder.h"
 #include "transport_catalogue.h"
 #include "json.h"
 
 
 namespace transport_catalogue {
     void ParseRequests(const json::Document& doc, TransportCatalogue& obj);
+    transport_catalogue::RoutingSettings ParseRoutingSettings(const json::Document& document);
 
     namespace input {
         std::string ReadLine(std::istream& input);
@@ -33,11 +35,15 @@ namespace transport_catalogue {
     namespace output {
         json::Node StopInfo(const TransportCatalogue& catalog, const json::Node& request);
         json::Node BusInfo(const TransportCatalogue& catalog, const json::Node& request);
-        json::Node FoundInfo( const TransportCatalogue& catalog, const json::Node& request, const RequestHandler& req_handler);
+        json::Node FoundInfo( const TransportCatalogue& catalog, const json::Node& request,
+                              const RequestHandler& req_handler);
 
         json::Node MapRequest(const json::Node& req, const RequestHandler& req_handler);
+        
+        json::Node ParseOutputRouteRequest(const RequestHandler& req_handler, const json::Node& req);
 
-        void OutputData(std::ostream& out, const TransportCatalogue& catalog, const json::Array& doc, const RequestHandler& req_handler);
+        void OutputData(std::ostream& out, const TransportCatalogue& catalog,
+                        const json::Array& doc, const RequestHandler& req_handler);
     }
 
 }

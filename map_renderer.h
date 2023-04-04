@@ -82,6 +82,8 @@ namespace transport_catalogue {
             svg::Document RenderMap(BusIterator first, BusIterator last) const;
 
         private:
+            RenderSettings settings_;
+
             template<typename BusIterator>
             void RenderRoutePolylines(const SphereProjector& projector, BusIterator first, BusIterator last, svg::Document& document) const;
 
@@ -89,13 +91,11 @@ namespace transport_catalogue {
 
             void FillPolylineColor(svg::Polyline& route, const svg::Color& color) const;
 
-            void RenderRouteEndpointNames(const svg::Point& position, const svg::Color& color, const std::string& name, std::vector<svg::Text>& out_texts) const;    
+            void RenderRouteEndpointNames(const svg::Point& position, const svg::Color& color,
+                                          const std::string& name, std::vector<svg::Text>& out_texts) const;
             template<typename StopIterator>
             void RenderStops(StopIterator first, StopIterator last, const SphereProjector& projector, svg::Document& document) const;
-            
             void RenderStopName(const svg::Point& position, const std::string& name, svg::Document& document) const;
-
-            RenderSettings settings_;
         };
     }
 }

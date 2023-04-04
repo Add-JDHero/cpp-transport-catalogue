@@ -79,5 +79,22 @@ namespace transport_catalogue {
         private:
             std::hash<const void*> hasher_;
         };
+    
+        std::vector<StopPtr> MakeRoute(BusPtr bus);
+        std::vector<StopPtr> MakeRoute(const Bus& bus);
+
+        template<typename Iterator>
+        void MakeRoute(Iterator first, Iterator last, std::vector<StopPtr> &out_stops, bool is_roundtrip) {
+            if (first == last) {
+                return;
+            }
+
+            out_stops.push_back(*first);
+            MakeRoute(next(first), last, out_stops, is_roundtrip);
+
+            if (!is_roundtrip && next(first) != last) {
+                out_stops.push_back(*first);
+            }
+        }
     }
 }

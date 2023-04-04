@@ -12,3 +12,21 @@
  * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
  *
  */
+
+namespace transport_catalogue {
+    namespace domain {
+
+        std::vector<StopPtr> MakeRoute(BusPtr bus) {
+            std::vector<StopPtr> stops;
+            MakeRoute(bus->route_.begin(), bus->route_.end(), stops, bus->flag_);
+            return stops;
+        }
+
+        std::vector<StopPtr> MakeRoute(const Bus& bus) {
+            std::vector<StopPtr> stops;
+            MakeRoute(bus.route_.begin(), bus.route_.end(), stops, bus.flag_);
+            return stops;
+        }
+
+    }
+}

@@ -5,9 +5,11 @@
 namespace transport_catalogue {
 
 
-    RequestHandler::RequestHandler(const TransportCatalogue& db, const map_renderer::MapRenderer& renderer) :
+    RequestHandler::RequestHandler(const TransportCatalogue& db, const map_renderer::MapRenderer& renderer,
+                                    const TransportRouter& router) :
         catalogue_(db),
-        renderer_(renderer) {
+        renderer_(renderer),
+        router_(router) {
     }
 
     // Возвращает информацию о маршруте (запрос Bus)
@@ -38,6 +40,10 @@ namespace transport_catalogue {
         );
 
         return renderer_.RenderMap(buses.begin(), buses.end());
+    }
+
+    std::optional<TransportRouter::RouteResult> RequestHandler::BuildRoute(std::string_view from, std::string_view to) const {
+        return router_.BuildRoute(*catalogue_.FindStop(from), *catalogue_.FindStop(to));
     }
 
 }

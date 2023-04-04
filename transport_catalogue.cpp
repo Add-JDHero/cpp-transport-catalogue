@@ -148,5 +148,13 @@ namespace transport_catalogue {
     const std::deque<Bus>& TransportCatalogue::GetBusesByOrder() const {
         return buses_;
     }
+
+    ranges::Range<std::deque<Stop>::const_iterator> TransportCatalogue::GetStopsRange() const {
+        return ranges::AsRange(stops_);
+    }
+
+    ranges::Range<std::deque<Bus>::const_iterator> TransportCatalogue::GetBusesRange() const {
+        return ranges::AsRange(buses_);
+    }
 }
 

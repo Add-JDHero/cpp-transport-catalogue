@@ -10,17 +10,25 @@
 namespace transport_catalogue {
 
     void ParseRequests(const json::Document& doc, TransportCatalogue& obj) {
-            const json::Dict* requests = &doc.GetRoot().AsMap();
-            const json::Array* base_req = &requests->at("base_requests").AsArray();
-            const json::Array& stat_request = doc.GetRoot().AsMap().at("stat_requests").AsArray();
+        const json::Dict* requests = &doc.GetRoot().AsMap();
+        const json::Array* base_req = &requests->at("base_requests").AsArray();
+        const json::Array& stat_request = doc.GetRoot().AsMap().at("stat_requests").AsArray();
 
-            
-            input::FillDatabase(obj, *base_req);
+        input::FillDatabase(obj, *base_req);
 
-            map_renderer::MapRenderer renderer(map_renderer::input::ParseRenderSettings(doc));
-            RequestHandler request_handler(obj, renderer);
+        map_renderer::MapRenderer renderer(map_renderer::input::ParseRenderSettings(doc));
+        TransportRouter route_manager(ParseRoutingSettings(doc), obj);
+        RequestHandler request_handler(obj, renderer, route_manager);
 
-            output::OutputData(std::cout, obj, stat_request, request_handler);
+        output::OutputData(std::cout, obj, stat_request, request_handler);
+    }
+
+    transport_catalogue::RoutingSettings ParseRoutingSettings(const json::Document& document) {
+        const auto& settings = document.GetRoot().AsMap().at("routing_settings"s).AsMap();
+        return {
+            settings.at("bus_wait_time"s).AsDouble(),
+            settings.at("bus_velocity"s).AsDouble(),
+        };
     }
 
     namespace input {
@@ -50,7 +58,6 @@ namespace transport_catalogue {
 
             return queue;
         }
-
 
         /*
         * Sets the "real" distances between stops in the transport directory
@@ -187,6 +194,8 @@ namespace transport_catalogue {
                 return StopInfo(catalog, request);
             } else if (rec_type == "Map") {
                 return MapRequest(request, req_handler);
+            } else if (rec_type == "Route") {
+                return ParseOutputRouteRequest(req_handler, request);
             }
             return rec_type == "Bus" ? BusInfo(catalog, request) : StopInfo(catalog, request);
         }
@@ -219,6 +228,58 @@ namespace transport_catalogue {
             };
 
             return result;
+        }
+
+        json::Node ParseOutputRouteRequest(const RequestHandler& req_handler, const json::Node& req) {
+            const auto from = req.AsMap().at("from"s).AsString();
+            const auto to = req.AsMap().at("to"s).AsString();
+
+            if (auto result = req_handler.BuildRoute(from, to)) {
+                const auto [total_time, route_items] = *result;
+
+                json::Builder itemsBuilder;
+                auto arrayBuilder = itemsBuilder.StartArray();
+                for (const auto& item : route_items) {
+                    if (item.type == RouteItemType::Wait) {
+                        arrayBuilder.Value(json::Builder{}
+                            .StartDict()
+                                .Key("type"s).Value("Wait"s)
+                                .Key("stop_name"s).Value(item.stop_name)
+                                .Key("time"s).Value(item.time)
+                            .EndDict()
+                            .Build()
+                            .AsMap()
+                        );
+                    } else {
+                        arrayBuilder.Value(json::Builder{}
+                            .StartDict()
+                                .Key("type"s).Value("Bus"s)
+                                .Key("bus"s).Value(item.bus_name)
+                                .Key("span_count"s).Value(item.span_count)
+                                .Key("time"s).Value(item.time)
+                            .EndDict()
+                            .Build()
+                            .AsMap()
+                        );
+                    }
+                }
+                arrayBuilder.EndArray();
+
+                return json::Builder{}
+                    .StartDict()
+                        .Key("request_id"s).Value(req.AsMap().at("id"s).AsInt())
+                        .Key("total_time"s).Value(total_time)
+                        .Key("items"s).Value(itemsBuilder.Build().AsArray())
+                    .EndDict()
+                    .Build();
+            } else {
+                return json::Builder{}
+                    .StartDict()
+                        .Key("request_id"s).Value(req.AsMap().at("id"s).AsInt())
+                        .Key("error_message"s).Value("not found"s)
+                    .EndDict()
+                    .Build();
+            }
         }
     }
 }
